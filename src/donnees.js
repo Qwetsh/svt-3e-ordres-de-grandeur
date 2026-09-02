@@ -208,8 +208,15 @@ export const objets = [
     // se poser en plein sur le cheveu déjà stationné à gauche, et son corps en
     // est coupé en deux. Reste assez négatif pour ne pas percuter le grain de
     // sel, qui entre en scène presque en même temps.
-    decalageX: -0.06,
-    z: -0.5,
+    decalageX: -0.09,
+    // Seul objet placé délibérément AU PREMIER PLAN. Il arrive à l'écran en
+    // même temps que le cheveu, déjà stationné à sa gauche, et que le grain de
+    // sel, qui est énorme : sur un écran étroit — une tablette en portrait —
+    // les trois ne peuvent pas tenir côte à côte sans se recouvrir un peu.
+    // Placé devant, l'acarien reste entier et lisible ; placé derrière, il
+    // était coupé en deux. La caméra étant orthographique, ce choix ne change
+    // strictement rien à sa taille apparente.
+    z: 0.62,
     source: {
       texte: "DermNet NZ, « Demodex, demodicosis » — Demodex folliculorum adulte : 0,3 à 0,4 mm de long ; D. brevis, plus court, 0,15 à 0,2 mm.",
       url: 'https://dermnetnz.org/topics/demodex',

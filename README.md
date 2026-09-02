@@ -82,6 +82,34 @@ chacune est en tête de `src/donnees.js`.
 
 ---
 
+## Adresse publique et intégration dans Genially
+
+L'application est en ligne à cette adresse, mise à jour automatiquement à chaque
+envoi sur `main` :
+
+**https://qwetsh.github.io/svt-3e-ordres-de-grandeur/**
+
+Pour l'intégrer dans Genially : *Insérer → Autre → Code HTML*, puis coller
+
+```html
+<iframe src="https://qwetsh.github.io/svt-3e-ordres-de-grandeur/"
+        width="100%" height="100%" style="border:0"
+        allow="fullscreen"
+        title="Ordres de grandeur du monde microscopique"></iframe>
+```
+
+Deux réserves à connaître :
+
+- **Prévoir le cadre le plus grand possible.** L'application dispose les objets
+  sur toute la largeur disponible ; dans une vignette étroite, les plus gros se
+  recouvrent davantage.
+- **Doubler l'iframe d'un lien direct vers l'adresse ci-dessus.** Dans un cadre
+  intégré, le pincement à deux doigts est parfois capté par la page qui
+  l'héberge, et le hors-ligne ne fonctionne que sur l'application ouverte pour
+  elle-même — Genially, lui, exige de toute façon une connexion.
+
+---
+
 ## Développement
 
 ```bash
