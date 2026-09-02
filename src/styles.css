@@ -1,0 +1,727 @@
+/* ==========================================================================
+   Ordres de grandeur du monde microscopique — feuille de style
+   CSS pur, aucune dépendance.
+
+   Contraintes retenues :
+   - lisible à bout de bras sur tablette ET projeté au tableau (typographie
+     volontairement grande, contrastes élevés) ;
+   - zones tactiles d'au moins 44 px, la recommandation d'Apple pour le doigt ;
+   - aucune sélection de texte ni rebond de page pendant les gestes.
+   ========================================================================== */
+
+:root {
+  --fond: #0b0f16;
+  --fond-panneau: rgba(16, 22, 33, 0.92);
+  --bordure: rgba(255, 255, 255, 0.14);
+  --texte: #eef2f8;
+  --texte-attenue: #9aa7b8;
+  --accent: #ffd166;
+  --rayon: 12px;
+
+  color-scheme: dark;
+  font-family: system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#racine {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background: var(--fond);
+  color: var(--texte);
+}
+
+body {
+  /* Empêche le rebond élastique de Safari : sans cela, un pincement un peu
+     large fait rebondir toute la page au lieu de zoomer la scène. */
+  overscroll-behavior: none;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.application {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* --- Scène 3D ------------------------------------------------------------ */
+
+.scene {
+  position: absolute;
+  inset: 0;
+  /* Indispensable sur iPad : sans cette ligne, Safari intercepte le pincement
+     et zoome la page entière au lieu de laisser la scène le recevoir. */
+  touch-action: none;
+}
+
+/* --- Étiquettes des objets ----------------------------------------------- */
+
+.etiquettes {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.etiquette {
+  position: absolute;
+  transform: translate(-50%, 12px);
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  /* Compacte à dessein : jusqu'à trois étiquettes peuvent se superposer en
+     rangées sous la ligne de base, et la pile entière doit tenir au-dessus du
+     panneau de commandes. */
+  padding: 5px 11px;
+  min-width: 92px;
+  background: rgba(11, 15, 22, 0.72);
+  border: 1px solid var(--bordure);
+  border-top: 2px solid var(--couleur);
+  border-radius: var(--rayon);
+  backdrop-filter: blur(6px);
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.etiquette--active {
+  background: rgba(20, 28, 41, 0.94);
+  border-color: var(--couleur);
+  box-shadow: 0 0 0 1px var(--couleur), 0 6px 24px rgba(0, 0, 0, 0.5);
+}
+
+.etiquette__nom {
+  font-size: 14px;
+  font-weight: 650;
+  letter-spacing: 0.01em;
+}
+
+.etiquette__bas {
+  display: flex;
+  align-items: baseline;
+  gap: 7px;
+}
+
+.etiquette__taille {
+  font-size: 17px;
+  font-weight: 700;
+  color: var(--couleur);
+  font-variant-numeric: tabular-nums;
+}
+
+.etiquette__categorie {
+  font-size: 10px;
+  color: var(--texte-attenue);
+  text-transform: lowercase;
+}
+
+/* Les repères non vivants sont visuellement mis à part : il ne faut pas qu'un
+   élève range le grain de sel parmi les micro-organismes. */
+.etiquette--non-vivant {
+  border-style: dashed;
+}
+
+.etiquette--non-vivant .etiquette__categorie {
+  color: var(--accent);
+  font-weight: 600;
+}
+
+/* --- Carte « à cette échelle » ------------------------------------------- */
+
+.repere {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  padding: 14px 18px;
+  background: var(--fond-panneau);
+  border: 1px solid var(--bordure);
+  border-left: 4px solid var(--couleur);
+  border-radius: var(--rayon);
+  backdrop-filter: blur(10px);
+  max-width: 260px;
+}
+
+.repere__titre {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--texte-attenue);
+}
+
+.repere__nom {
+  font-size: 20px;
+  font-weight: 700;
+  margin-top: 4px;
+  line-height: 1.2;
+}
+
+.repere__soustitre {
+  font-size: 13px;
+  color: var(--texte-attenue);
+  font-style: italic;
+}
+
+.repere__taille {
+  font-size: 26px;
+  font-weight: 700;
+  color: var(--couleur);
+  margin-top: 6px;
+  font-variant-numeric: tabular-nums;
+}
+
+.repere__categorie {
+  font-size: 12px;
+  color: var(--texte-attenue);
+  margin-top: 2px;
+}
+
+.repere__oeil {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  padding: 4px 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.07);
+  color: var(--texte-attenue);
+  display: inline-block;
+}
+
+.repere__oeil--visible {
+  background: rgba(255, 209, 102, 0.16);
+  color: var(--accent);
+}
+
+/* --- Barre d'échelle ------------------------------------------------------ */
+
+.barre-echelle {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  padding: 12px 18px;
+  background: var(--fond-panneau);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  backdrop-filter: blur(10px);
+  text-align: right;
+}
+
+.barre-echelle__trait {
+  position: relative;
+  height: 3px;
+  background: var(--texte);
+  margin: 6px 0 8px auto;
+  min-width: 24px;
+  transition: width 0.06s linear;
+}
+
+.barre-echelle__embout {
+  position: absolute;
+  top: -5px;
+  width: 3px;
+  height: 13px;
+  background: var(--texte);
+}
+
+.barre-echelle__embout:first-child {
+  left: 0;
+}
+
+.barre-echelle__embout:last-child {
+  right: 0;
+}
+
+.barre-echelle__valeur {
+  font-size: 24px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+
+.barre-echelle__champ {
+  font-size: 12px;
+  color: var(--texte-attenue);
+  margin-top: 2px;
+}
+
+/* --- Bas de l'écran ------------------------------------------------------- */
+
+.panneau-bas {
+  position: absolute;
+  left: 16px;
+  right: 16px;
+  bottom: 16px;
+  display: grid;
+  gap: 10px;
+  padding: 14px 18px;
+  background: var(--fond-panneau);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  backdrop-filter: blur(10px);
+}
+
+/* --- Mini-carte ----------------------------------------------------------- */
+
+.minicarte__titre {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: var(--texte-attenue);
+  margin-bottom: 20px;
+}
+
+.minicarte__piste {
+  position: relative;
+  height: 34px;
+  margin: 0 8px;
+}
+
+.minicarte__axe {
+  position: absolute;
+  top: 8px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.18);
+}
+
+.minicarte__oeil {
+  position: absolute;
+  top: 0;
+  height: 18px;
+  background: rgba(255, 209, 102, 0.18);
+  border-left: 1px solid rgba(255, 209, 102, 0.6);
+  border-right: 1px solid rgba(255, 209, 102, 0.6);
+}
+
+.minicarte__graduation {
+  position: absolute;
+  top: 0;
+  transform: translateX(-50%);
+  text-align: center;
+}
+
+.minicarte__graduation-trait {
+  display: block;
+  width: 1px;
+  height: 14px;
+  margin: 3px auto 0;
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.minicarte__graduation-texte {
+  display: block;
+  font-size: 11px;
+  color: var(--texte-attenue);
+  margin-top: 2px;
+  font-variant-numeric: tabular-nums;
+}
+
+.minicarte__point {
+  position: absolute;
+  top: 9px;
+  transform: translate(-50%, -50%);
+  /* 44 px de zone tactile même si le point n'en fait que 12 : on agrandit la
+     cible avec une bordure transparente plutôt qu'avec le point lui-même. */
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
+}
+
+.minicarte__point::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 11px;
+  height: 11px;
+  border-radius: 50%;
+  background: var(--couleur);
+  border: 2px solid var(--fond);
+  transition: width 0.15s, height 0.15s;
+}
+
+.minicarte__point--actif::after {
+  width: 18px;
+  height: 18px;
+  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.22);
+}
+
+.minicarte__curseur {
+  position: absolute;
+  top: -6px;
+  height: 28px;
+  width: 2px;
+  background: var(--texte);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.minicarte__curseur::before {
+  content: '';
+  position: absolute;
+  top: -5px;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: var(--texte);
+}
+
+.minicarte__legende {
+  font-size: 11px;
+  color: var(--texte-attenue);
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.minicarte__legende-oeil {
+  width: 18px;
+  height: 10px;
+  background: rgba(255, 209, 102, 0.28);
+  border-left: 1px solid rgba(255, 209, 102, 0.7);
+  border-right: 1px solid rgba(255, 209, 102, 0.7);
+}
+
+/* --- Commandes ------------------------------------------------------------ */
+
+.controles {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.bouton {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 44px;
+  padding: 0 16px;
+  font-size: 16px;
+  font-weight: 600;
+  font-family: inherit;
+  color: var(--texte);
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid var(--bordure);
+  border-radius: var(--rayon);
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.bouton:hover {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.bouton:active {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.bouton--rond {
+  min-width: 44px;
+  padding: 0;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.bouton--lecture {
+  background: rgba(255, 209, 102, 0.16);
+  border-color: rgba(255, 209, 102, 0.4);
+  color: var(--accent);
+}
+
+.bouton--actif {
+  background: var(--accent);
+  color: #10161f;
+}
+
+.bouton__texte {
+  font-size: 14px;
+}
+
+.curseur {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.curseur__extremite {
+  font-size: 12px;
+  color: var(--texte-attenue);
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+
+.curseur input[type='range'] {
+  flex: 1;
+  height: 44px;
+  margin: 0;
+  background: none;
+  -webkit-appearance: none;
+  appearance: none;
+  cursor: pointer;
+}
+
+.curseur input[type='range']::-webkit-slider-runnable-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #4a90d9, #7fb069, #e8a33d, #8b93a1);
+}
+
+.curseur input[type='range']::-moz-range-track {
+  height: 6px;
+  border-radius: 3px;
+  background: linear-gradient(90deg, #4a90d9, #7fb069, #e8a33d, #8b93a1);
+}
+
+.curseur input[type='range']::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 26px;
+  height: 26px;
+  margin-top: -10px;
+  border-radius: 50%;
+  background: var(--texte);
+  border: 3px solid var(--fond);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+}
+
+.curseur input[type='range']::-moz-range-thumb {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--texte);
+  border: 3px solid var(--fond);
+}
+
+/* --- Aide ---------------------------------------------------------------- */
+
+.aide {
+  position: absolute;
+  left: 50%;
+  transform: translateX(-50%);
+  top: 16px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: var(--texte-attenue);
+  background: rgba(11, 15, 22, 0.6);
+  border: 1px solid var(--bordure);
+  border-radius: 999px;
+  backdrop-filter: blur(6px);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.aide strong {
+  color: var(--texte);
+}
+
+/* --- Panneau des sources -------------------------------------------------- */
+
+.panneau {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  z-index: 10;
+}
+
+.panneau__fond {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 7, 11, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.panneau__contenu {
+  position: relative;
+  width: min(760px, calc(100% - 32px));
+  max-height: calc(100% - 48px);
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 24px 28px 28px;
+  background: #101621;
+  border: 1px solid var(--bordure);
+  border-radius: 16px;
+}
+
+.panneau__entete {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  position: sticky;
+  top: -24px;
+  padding: 24px 0 12px;
+  margin: -24px 0 0;
+  background: #101621;
+}
+
+.panneau__entete h2 {
+  margin: 0;
+  font-size: 22px;
+}
+
+.panneau__intro {
+  margin: 0 0 18px;
+  color: var(--texte-attenue);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.panneau__liste {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 14px;
+}
+
+.fiche {
+  padding: 14px 16px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid var(--bordure);
+  border-left: 4px solid var(--couleur, var(--accent));
+  border-radius: var(--rayon);
+}
+
+.fiche--oeil {
+  --couleur: var(--accent);
+}
+
+.fiche__entete {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.fiche__pastille {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: var(--couleur, var(--accent));
+  flex: none;
+}
+
+.fiche__nom {
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.fiche__categorie {
+  font-size: 12px;
+  color: var(--texte-attenue);
+}
+
+.fiche__mesures {
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.fiche__mesures strong {
+  font-size: 20px;
+  color: var(--couleur, var(--accent));
+  font-variant-numeric: tabular-nums;
+}
+
+.fiche__fourchette {
+  font-size: 13px;
+  color: var(--texte-attenue);
+}
+
+.fiche__note {
+  margin: 8px 0 0;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.fiche__source {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--texte-attenue);
+}
+
+.fiche__source a {
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.panneau__pied {
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid var(--bordure);
+  font-size: 13px;
+  color: var(--texte-attenue);
+  line-height: 1.6;
+}
+
+.panneau__pied code {
+  padding: 2px 6px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  font-size: 12px;
+}
+
+/* --- Écrans étroits (tablette en portrait, téléphone) --------------------- */
+
+/* Le bandeau d'aide est le premier élément sacrifié quand la place manque en
+   haut : sous 1000 px, il entrerait en collision avec la barre d'échelle. */
+@media (max-width: 1000px) {
+  .aide {
+    display: none;
+  }
+}
+
+@media (max-width: 720px) {
+  .repere {
+    max-width: 190px;
+    padding: 10px 12px;
+  }
+
+  .repere__nom {
+    font-size: 16px;
+  }
+
+  .repere__taille {
+    font-size: 21px;
+  }
+
+  .barre-echelle__valeur {
+    font-size: 19px;
+  }
+
+  .bouton__texte {
+    display: none;
+  }
+
+  .bouton {
+    padding: 0 12px;
+  }
+
+  .curseur__extremite {
+    display: none;
+  }
+}
+
+@media (max-height: 560px) {
+  .minicarte {
+    display: none;
+  }
+}

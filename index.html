@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <!--
+      user-scalable=no et maximum-scale=1 sont indispensables ici : sans eux,
+      Safari sur iPad intercepte le pincement pour zoomer la PAGE, et la scène
+      ne reçoit jamais le geste. C'est le défaut numéro un de ce type
+      d'application en classe.
+    -->
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#0b0f16" />
+    <!-- Déclaré explicitement : sans ce lien, le navigateur va chercher un
+         /favicon.ico qui n'existe pas et journalise une erreur 404 à chaque
+         chargement. -->
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="apple-touch-icon" href="./favicon.svg" />
+    <meta
+      name="description"
+      content="Zoom continu de 100 nm à 1 mm : virus, bactéries et cellules dessinés simultanément à la même échelle réelle."
+    />
+    <!-- Permet d'ajouter l'application à l'écran d'accueil de l'iPad, en plein écran. -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <title>Ordres de grandeur du monde microscopique</title>
+  </head>
+  <body>
+    <div id="racine"></div>
+    <noscript>Cette application a besoin de JavaScript pour fonctionner.</noscript>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

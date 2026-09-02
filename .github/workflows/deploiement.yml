@@ -1,0 +1,51 @@
+# Construit l'application et la publie sur GitHub Pages à chaque envoi sur
+# `main`. Rien à faire à la main : modifier un fichier, pousser, et l'adresse
+# publique est à jour une minute plus tard.
+name: Déploiement sur GitHub Pages
+
+on:
+  push:
+    branches: [main]
+  # Permet aussi de relancer un déploiement depuis l'onglet « Actions ».
+  workflow_dispatch:
+
+# Droits minimaux nécessaires à la publication.
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# Un seul déploiement à la fois ; si deux envois se suivent de près, seul le
+# dernier est publié.
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  construire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          # Vite 7 exige Node 20.19 ou plus ; on prend la version 22, stable.
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+      - run: npm run build
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: dist
+
+  deployer:
+    needs: construire
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deploiement.outputs.page_url }}
+    steps:
+      - id: deploiement
+        uses: actions/deploy-pages@v4
