@@ -209,10 +209,33 @@ export function positionXFrise(objet, nmParPixel, largeurViewport, hauteurViewpo
  * Renvoie un tableau ne contenant QUE les objets effectivement visibles —
  * typiquement 3 à 5 sur les 10, à n'importe quelle échelle.
  */
-export function calculerScene(objets, nmParPixel, largeurViewport, hauteurViewport) {
+export function calculerScene(objets, nmParPixel, largeurViewport, hauteurViewport, azimut = 0, repere = null) {
   const limiteTaille = SEUIL_DEBORDEMENT * Math.max(largeurViewport, hauteurViewport)
   const bordEcran = MARGE_CULLING * largeurViewport
   const ligneBase = LIGNE_BASE_FRACTION * hauteurViewport
+  // L'orbite étant libre, la position d'un objet À L'ÉCRAN n'est plus sa
+  // position sur la frise : vue de côté, la frise se lit en profondeur. Le
+  // culling horizontal doit donc porter sur la position projetée, sinon on
+  // supprimerait des objets revenus au centre du cadre et on en garderait
+  // d'autres partis hors champ.
+  const cosAzimut = Math.cos(azimut)
+  const sinAzimut = Math.sin(azimut)
+
+  // Effacement des voisins quand on quitte la vue de face.
+  //
+  // De face, la frise entière doit être lisible : c'est elle qui porte la
+  // comparaison des tailles. De profil, en revanche, elle se lit en enfilade —
+  // les objets sont alignés dans la profondeur — et le voisin le plus proche
+  // vient masquer purement et simplement celui que l'on est en train de
+  // regarder. Un grain de sel de 400 µm recouvre entièrement l'acarien de
+  // 350 µm dès un quart de tour.
+  //
+  // On efface donc progressivement tout ce qui n'est pas l'objet de l'échelle
+  // courante : de face on compare, de profil on fait le tour d'un seul objet.
+  // À un demi-tour, la frise est de nouveau vue de plein pied, simplement
+  // inversée, et tout réapparaît.
+  const effacementVoisins = Math.pow(Math.abs(sinAzimut), 0.8)
+
   const visibles = []
 
   for (let rang = 0; rang < objets.length; rang++) {
@@ -226,20 +249,33 @@ export function calculerScene(objets, nmParPixel, largeurViewport, hauteurViewpo
     if (longueurPx > limiteTaille) continue
 
     const x = positionXFrise(objet, nmParPixel, largeurViewport, hauteurViewport, longueurPx, rang)
+    const z = (objet.z || 0) * longueurPx
 
     // Culling horizontal exact : on teste les BORDS de l'objet, pas son centre.
     // Tester le centre supprimerait un objet géant dont le centre est loin hors
-    // cadre alors que son bord traverse encore l'écran.
+    // cadre alors que son bord traverse encore l'écran. La demi-largeur retenue
+    // est la plus grande dimension de l'objet : quel que soit l'angle sous
+    // lequel on le regarde, il ne peut pas déborder davantage.
+    const ecranX = x * cosAzimut - z * sinAzimut
     const demiLargeur = longueurPx / 2
-    if (x + demiLargeur < -bordEcran || x - demiLargeur > bordEcran) continue
+    if (ecranX + demiLargeur < -bordEcran || ecranX - demiLargeur > bordEcran) continue
 
     // Estompage progressif juste avant la disparition : sans cela, l'objet
     // « pop » brutalement, ce qui se lit comme un bug plutôt que comme une
     // disparition d'échelle.
-    const opacite =
+    const opaciteTaille =
       longueurPx >= SEUIL_ESTOMPAGE_PX
         ? 1
         : (longueurPx - SEUIL_DISPARITION_PX) / (SEUIL_ESTOMPAGE_PX - SEUIL_DISPARITION_PX)
+
+    // L'objet de l'échelle courante ne s'efface jamais : c'est celui autour
+    // duquel on tourne.
+    const opaciteAngle = repere && objet.id !== repere.id ? 1 - effacementVoisins : 1
+    const opacite = Math.min(opaciteTaille, opaciteAngle)
+
+    // Devenu invisible : autant ne pas le dessiner du tout, ni lui, ni son
+    // étiquette.
+    if (opacite <= 0.02) continue
 
     visibles.push({
       objet,
@@ -255,7 +291,7 @@ export function calculerScene(objets, nmParPixel, largeurViewport, hauteurViewpo
       // constant représenterait alors, pour un objet minuscule, plusieurs fois
       // sa propre taille, et il paraîtrait décollé de la ligne de base — ce qui
       // ruinerait la comparaison que cette ligne sert précisément à permettre.
-      z: (objet.z || 0) * longueurPx,
+      z,
       longueurPx,
       opacite: Math.max(0, Math.min(1, opacite)),
       detail: niveauDetail(longueurPx),

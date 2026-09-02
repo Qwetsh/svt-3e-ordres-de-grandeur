@@ -4,7 +4,7 @@
  * ============================================================================
  *
  *  Répartition des commandes :
- *      1 doigt qui glisse  →  tourner autour de la scène (orbite bridée)
+ *      1 doigt qui glisse  →  tourner autour des objets (tour complet)
  *      2 doigts qui pincent →  zoomer / dézoomer
  *      double tap          →  recadrer (retour à la vue de face)
  *      molette             →  zoomer (pour le poste du professeur)
@@ -21,17 +21,39 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import { appliquerFacteurZoom, contraindreZoom, curseurVersZoom, nmParPixelDeFocus } from './echelle.js'
 import { bornesZoom, objets } from './donnees.js'
 
-/** Bridage de l'orbite, en radians. La frise ne peut jamais être vue par la tranche. */
-export const AZIMUT_MAX = (50 * Math.PI) / 180
-export const ELEVATION_MAX = (35 * Math.PI) / 180
+/**
+ * L'AZIMUT N'EST PAS BRIDÉ : on fait le tour complet des objets, pour les voir
+ * de face, de profil, de dos.
+ *
+ * L'ÉLÉVATION, elle, s'arrête juste avant la verticale. Ce n'est pas un choix
+ * de confort : à 90° exactement, la direction de visée devient colinéaire au
+ * vecteur « haut » de la caméra, son orientation n'est plus définie et l'image
+ * bascule d'un quart de tour d'une image à l'autre. 85° laissent voir la scène
+ * pratiquement à la verticale, par-dessus comme par-dessous, sans jamais
+ * atteindre ce point.
+ */
+export const ELEVATION_MAX = (85 * Math.PI) / 180
 
-/** Sensibilité de l'orbite : radians par pixel de glissement. */
+/** Sensibilité de l'orbite : radians par pixel de glissement. À cette valeur,
+ *  un glissement de la largeur d'un iPad fait un peu plus d'un demi-tour. */
 const SENSIBILITE_ORBITE = 0.0045
 
 /** Durée du mode présentation, en millisecondes. */
 const DUREE_PRESENTATION = 30000
 
 const brider = (valeur, max) => Math.min(max, Math.max(-max, valeur))
+
+/**
+ * Ramène un angle dans [−π, π].
+ *
+ * L'azimut tourne sans fin ; sans cela il s'accumulerait indéfiniment au fil
+ * des gestes et finirait par perdre en précision. Ramener l'angle ne change
+ * rien à ce qui est affiché — c'est le même point de vue.
+ */
+function normaliserAngle(angle) {
+  const tour = Math.PI * 2
+  return angle - tour * Math.round(angle / tour)
+}
 
 export function useControleur(largeur, hauteur) {
   const conteneurRef = useRef(null)
@@ -201,8 +223,9 @@ export function useControleur(largeur, hauteur) {
         return
       }
 
-      // Un doigt : orbite bridée.
-      azimutRef.current = brider(azimutRef.current + dx * SENSIBILITE_ORBITE, AZIMUT_MAX)
+      // Un doigt : orbite. Le tour complet à l'horizontale, presque complet à
+      // la verticale.
+      azimutRef.current = normaliserAngle(azimutRef.current + dx * SENSIBILITE_ORBITE)
       elevationRef.current = brider(elevationRef.current - dy * SENSIBILITE_ORBITE, ELEVATION_MAX)
     }
 
@@ -240,8 +263,8 @@ export function useControleur(largeur, hauteur) {
       if (evenement.target.tagName === 'INPUT') return
       if (evenement.key === '+' || evenement.key === '=') zoomer(1.25)
       else if (evenement.key === '-' || evenement.key === '_') zoomer(1 / 1.25)
-      else if (evenement.key === 'ArrowLeft') azimutRef.current = brider(azimutRef.current - 0.06, AZIMUT_MAX)
-      else if (evenement.key === 'ArrowRight') azimutRef.current = brider(azimutRef.current + 0.06, AZIMUT_MAX)
+      else if (evenement.key === 'ArrowLeft') azimutRef.current = normaliserAngle(azimutRef.current - 0.06)
+      else if (evenement.key === 'ArrowRight') azimutRef.current = normaliserAngle(azimutRef.current + 0.06)
       else if (evenement.key === 'ArrowUp') elevationRef.current = brider(elevationRef.current + 0.05, ELEVATION_MAX)
       else if (evenement.key === 'ArrowDown') elevationRef.current = brider(elevationRef.current - 0.05, ELEVATION_MAX)
       else if (evenement.key === '0') recadrer()

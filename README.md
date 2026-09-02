@@ -13,14 +13,22 @@ pendant que Demodex apparaît.
 
 | Geste | Effet |
 |---|---|
-| **1 doigt** qui glisse | tourner autour de la scène |
-| **2 doigts** qui pincent | zoomer / dézoomer |
-| **double tap** | recadrer (vue de face) |
+| **1 doigt** qui glisse (ou la souris) | faire le tour de l'objet, sur 360° |
+| **2 doigts** qui pincent, ou la **molette** | zoomer / dézoomer |
+| **double tap** (ou double-clic) | recadrer (vue de face) |
 | **▶ Présentation** | voyage automatique du virus au grain de sel, 30 s |
 | **points de la mini-carte** | aller directement à un objet |
 
 Au clavier, depuis le poste professeur : `+` / `−` pour l'échelle, les flèches
 pour tourner, `0` pour recadrer, `espace` pour la présentation.
+
+**Ce qui se passe quand on tourne.** De face, toute la frise est visible : c'est
+la comparaison des tailles. En pivotant, les objets voisins s'effacent
+progressivement, et de profil il ne reste que celui de l'échelle courante — on
+en fait alors le tour, dessus et dessous compris. Le zoom continue de
+fonctionner pendant ce temps : en tournant la molette, on passe à l'objet
+suivant, qui apparaît à son tour. Un demi-tour complet ramène la frise entière,
+vue de l'autre côté.
 
 Les tablettes n'ont besoin du réseau **qu'au premier chargement**. Ensuite
 l'application est mise en cache et fonctionne hors ligne, y compris ajoutée à

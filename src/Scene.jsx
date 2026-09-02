@@ -72,14 +72,20 @@ function Eclairage() {
 }
 
 /** Le sol sur lequel tous les objets sont posés — il ancre la rotation. */
-function Sol({ ligneBase, largeur, hauteur }) {
+function Sol({ ligneBase, largeur, hauteur, azimut }) {
   // Dimensionné sur la plus grande dimension de l'écran, pas seulement sur la
   // largeur : sur une tablette tenue en portrait, un sol dimensionné en largeur
   // laisse voir ses propres bords en haut et en bas du cadre.
   const etendue = Math.max(largeur, hauteur) * 12
 
   return (
-    <group position={[0, ligneBase, 0]}>
+    // Le sol TOURNE avec l'orbite. Le plan, carré et immense, est indifférent à
+    // cette rotation ; c'est le trait de la ligne de base qui a besoin d'elle.
+    // Fixe, ce trait s'enfoncerait vers l'horizon dès qu'on quitte la vue de
+    // face et barrerait l'écran en diagonale. Il reste ainsi ce qu'il est : la
+    // ligne au sol sur laquelle tout est posé, vue de plein pied sous
+    // n'importe quel angle.
+    <group position={[0, ligneBase, 0]} rotation={[0, azimut, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[etendue, etendue]} />
         <meshStandardMaterial color="#141a24" roughness={1} transparent opacity={0.55} depthWrite={false} />
@@ -103,7 +109,7 @@ function Sol({ ligneBase, largeur, hauteur }) {
  * dessous ne l'est pas. Pendant le zoom, la dalle descend visiblement et
  * traverse les objets les uns après les autres.
  */
-function BandeOeilNu({ nmParPixel, ligneBase, largeur, hauteur }) {
+function BandeOeilNu({ nmParPixel, ligneBase, largeur, hauteur, azimut }) {
   const basPx = limiteOeilNu.basNm / nmParPixel
   const hautPx = limiteOeilNu.hautNm / nmParPixel
 
@@ -129,7 +135,11 @@ function BandeOeilNu({ nmParPixel, ligneBase, largeur, hauteur }) {
   const etendue = largeur * 6
 
   return (
-    <group position={[0, ligneBase + basPx + epaisseur / 2, 0]}>
+    // La bande PIVOTE avec l'orbite pour rester face à la caméra. Un plan fixe
+    // se verrait par la tranche dès un quart de tour et disparaîtrait purement
+    // et simplement — alors que la hauteur qu'il indique, elle, reste vraie
+    // sous tous les angles.
+    <group position={[0, ligneBase + basPx + epaisseur / 2, 0]} rotation={[0, azimut, 0]}>
       <mesh>
         <planeGeometry args={[etendue, epaisseur]} />
         <meshBasicMaterial color="#ffd166" transparent opacity={0.11} depthWrite={false} side={THREE.DoubleSide} />
@@ -153,8 +163,14 @@ function Contenu({ visibles, nmParPixel, azimut, elevation, largeur, hauteur }) 
     <>
       <Camera azimut={azimut} elevation={elevation} />
       <Eclairage />
-      <Sol ligneBase={ligneBase} largeur={largeur} hauteur={hauteur} />
-      <BandeOeilNu nmParPixel={nmParPixel} ligneBase={ligneBase} largeur={largeur} hauteur={hauteur} />
+      <Sol ligneBase={ligneBase} largeur={largeur} hauteur={hauteur} azimut={azimut} />
+      <BandeOeilNu
+        nmParPixel={nmParPixel}
+        ligneBase={ligneBase}
+        largeur={largeur}
+        hauteur={hauteur}
+        azimut={azimut}
+      />
 
       {visibles.map((visible) => (
         <group

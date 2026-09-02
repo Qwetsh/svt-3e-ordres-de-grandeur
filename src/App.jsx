@@ -48,6 +48,10 @@ function useTaille(reference) {
   return taille
 }
 
+/** Vrai si l'appareil possède un pointeur précis — souris ou pavé tactile. */
+const sourisPresente =
+  typeof window !== 'undefined' && window.matchMedia?.('(pointer: fine)').matches === true
+
 export default function App() {
   const cadreRef = useRef(null)
   const { largeur, hauteur } = useTaille(cadreRef)
@@ -68,16 +72,18 @@ export default function App() {
 
   const pret = largeur > 0 && hauteur > 0
 
-  // L'unique calcul de la scène. Il décide de ce qui existe à l'écran et de ce
-  // qui n'existe pas : c'est le seul endroit où le culling est appliqué.
-  const visibles = useMemo(
-    () => (pret ? calculerScene(objets, nmParPixel, largeur, hauteur) : []),
-    [pret, nmParPixel, largeur, hauteur],
-  )
-
+  // L'objet de l'échelle courante. Calculé AVANT la scène : c'est lui qui reste
+  // visible quand on tourne autour, les autres s'effaçant progressivement.
   const repere = useMemo(
     () => (pret ? objetRepere(objets, nmParPixel, largeur, hauteur) : null),
     [pret, nmParPixel, largeur, hauteur],
+  )
+
+  // L'unique calcul de la scène. Il décide de ce qui existe à l'écran et de ce
+  // qui n'existe pas : c'est le seul endroit où le culling est appliqué.
+  const visibles = useMemo(
+    () => (pret ? calculerScene(objets, nmParPixel, largeur, hauteur, azimut, repere) : []),
+    [pret, nmParPixel, largeur, hauteur, azimut, repere],
   )
 
   return (
@@ -131,9 +137,21 @@ export default function App() {
             />
           </div>
 
+          {/* L'aide est écrite dans les termes du matériel réellement utilisé :
+              « 2 doigts pour zoomer » n'aide personne au vidéoprojecteur, et
+              « molette » n'aide personne sur une tablette. */}
           <div className="aide">
-            <strong>1 doigt</strong> pour tourner autour · <strong>2 doigts</strong> pour zoomer ·{' '}
-            <strong>double tap</strong> pour recadrer
+            {sourisPresente ? (
+              <>
+                <strong>Glisser</strong> pour tourner tout autour · <strong>molette</strong> pour
+                zoomer · <strong>double-clic</strong> pour recadrer
+              </>
+            ) : (
+              <>
+                <strong>1 doigt</strong> pour tourner tout autour · <strong>2 doigts</strong> pour
+                zoomer · <strong>double tap</strong> pour recadrer
+              </>
+            )}
           </div>
         </>
       )}
