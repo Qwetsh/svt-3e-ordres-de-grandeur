@@ -421,25 +421,68 @@ function GlobuleRouge({ objet, detail, opacite }) {
 
     const pas = detail === 0 ? 10 : 26
     const points = []
-    // Face supérieure : du centre vers le bord.
-    for (let i = 0; i <= pas; i++) {
-      const rho = i / pas
-      points.push(new THREE.Vector2(Math.max(1e-5, rho * 0.5), demiEpaisseur(rho)))
-    }
-    // Face inférieure : du bord vers le centre.
+    // LE SENS DE PARCOURS DU PROFIL DÉCIDE DE QUEL CÔTÉ LA SURFACE EST VISIBLE.
+    // Parcouru à l'envers, le globule se retrouvait retourné comme un gant :
+    // ses faces avant étant éliminées par le rendu, on voyait l'intérieur de sa
+    // paroi arrière et il devenait impossible de comprendre sa forme en tournant
+    // autour — le creux central passait pour un trou.
+    //
+    // On descend donc la face inférieure du bord vers le centre, puis on remonte
+    // la face supérieure du centre vers le bord.
     for (let i = pas; i >= 0; i--) {
       const rho = i / pas
       points.push(new THREE.Vector2(Math.max(1e-5, rho * 0.5), -demiEpaisseur(rho)))
     }
+    for (let i = 0; i <= pas; i++) {
+      const rho = i / pas
+      points.push(new THREE.Vector2(Math.max(1e-5, rho * 0.5), demiEpaisseur(rho)))
+    }
     const lathe = new THREE.LatheGeometry(points, detail === 0 ? 18 : 48)
     lathe.computeVertexNormals()
+
+    // OMBRAGE DE LA CUVETTE, peint dans la géométrie.
+    //
+    // Le creux du globule descend d'à peine 16° : sous l'éclairage de la scène,
+    // volontairement doux pour ne pas délaver les couleurs, cette pente ne
+    // produit que 4 % d'écart de luminosité. Vu de dessus, le globule était donc
+    // un disque rouge parfaitement plat, et sa forme — la seule chose qui le
+    // distingue d'une pastille — restait invisible.
+    //
+    // On assombrit donc le fond de la cuvette et on laisse le bourrelet clair.
+    // Ce n'est pas un artifice : une cuvette reçoit réellement moins de lumière
+    // du ciel que le renflement qui l'entoure. C'est cet ombrage-là que dessinent
+    // tous les manuels, et il rend la forme lisible d'un coup d'œil.
+    const positions = lathe.attributes.position
+    const teintes = new Float32Array(positions.count * 3)
+    for (let i = 0; i < positions.count; i++) {
+      const rho = Math.min(1, Math.hypot(positions.getX(i), positions.getZ(i)) / 0.5)
+      // Sombre jusqu'au fond du creux, clair dès le renflement des deux tiers.
+      const t = Math.min(1, rho / 0.72)
+      const facteur = 0.58 + 0.42 * t * t * (3 - 2 * t)
+      teintes[i * 3] = facteur
+      teintes[i * 3 + 1] = facteur
+      teintes[i * 3 + 2] = facteur
+    }
+    lathe.setAttribute('color', new THREE.BufferAttribute(teintes, 3))
+
     return lathe
   }, [detail, epaisseur])
 
   return (
     <group position={[0, epaisseur / 2, 0]}>
       <mesh geometry={geometrie}>
-        <meshStandardMaterial {...materiau(couleur, opacite, { roughness: 0.35, metalness: 0.1 })} />
+        <meshStandardMaterial
+          {...materiau(couleur, opacite, {
+            roughness: 0.35,
+            metalness: 0.1,
+            // Ceinture et bretelles, sur le seul objet de la frise dont la
+            // surface se replie sur elle-même : quel que soit le sens dans
+            // lequel la révolution engendre ses faces, aucune ne peut manquer à
+            // l'appel et laisser voir l'intérieur du globule.
+            side: THREE.DoubleSide,
+            vertexColors: true,
+          })}
+        />
       </mesh>
     </group>
   )
@@ -458,6 +501,23 @@ function CelluleJoue({ objet, detail, opacite }) {
     const geometrie = new THREE.SphereGeometry(0.5, detail === 0 ? 16 : 48, detail === 0 ? 10 : 32)
     // Contour irrégulier : une cellule épithéliale n'est jamais un disque net.
     if (detail > 0) bosseler(geometrie, 0.075, 5.5, 6.3)
+
+    // RENFLEMENT CENTRAL. Aplatie d'un facteur 20, la cellule se réduisait à une
+    // crêpe uniforme : la sphère écrasée garde son profil, mais sa pente devient
+    // vingt fois plus douce et ne renvoie plus aucun modelé. On amincit donc les
+    // bords en gardant l'épaisseur annoncée au centre — l'ordre de grandeur, qui
+    // est le sujet de l'application, reste exact, et la cellule reprend le
+    // galbe qu'elle a réellement autour de son noyau.
+    const positions = geometrie.attributes.position
+    for (let i = 0; i < positions.count; i++) {
+      const rayon = Math.hypot(positions.getX(i), positions.getZ(i)) / 0.5
+      positions.setY(i, positions.getY(i) * (0.35 + 0.65 * Math.exp(-2.2 * rayon * rayon)))
+    }
+    positions.needsUpdate = true
+    // Indispensable après la déformation : ce sont les normales recalculées qui
+    // font exister le galbe pour la lumière, pas le déplacement lui-même.
+    geometrie.computeVertexNormals()
+
     return geometrie
   }, [detail])
 
@@ -469,7 +529,7 @@ function CelluleJoue({ objet, detail, opacite }) {
       <mesh geometry={membrane} scale={[1, epaisseur, largeur]}>
         <meshStandardMaterial
           {...materiau(couleur, opacite, {
-            opacity: 0.7,
+            opacity: 0.82,
             roughness: 0.3,
             side: THREE.DoubleSide,
             // Une surface translucide devant un fond presque noir laisse passer

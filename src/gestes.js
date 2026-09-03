@@ -33,13 +33,16 @@ import { bornesZoom, objets } from './donnees.js'
  * bascule d'un quart de tour d'une image à l'autre. 85° laissent survoler la
  * scène pratiquement à la verticale sans jamais atteindre ce point.
  *
- * En bas, elle s'arrête AU NIVEAU DU SOL. Passer dessous donnait une vue où les
- * objets pendent au plafond, la ligne de base file au-dessus de la tête et plus
- * rien ne dit où est le haut : on s'y perdait en deux gestes. Le sol est
- * maintenant une surface pleine, et la caméra reste du côté où l'on se tient.
+ * En bas, elle s'arrête UN PEU AVANT LE NIVEAU DU SOL. Passer dessous donnait
+ * une vue où les objets pendent au plafond, la ligne de base file au-dessus de
+ * la tête et plus rien ne dit où est le haut : on s'y perdait en deux gestes.
+ * Mais s'arrêter pile à l'horizontale ne suffisait pas non plus : à 0°, le sol
+ * est vu par la tranche, son carrelage se réduit à un trait et disparaît d'un
+ * coup. Ces 6° gardent toujours quelques carreaux visibles, donc toujours un
+ * repère.
  */
 export const ELEVATION_MAX = (85 * Math.PI) / 180
-export const ELEVATION_MIN = 0
+export const ELEVATION_MIN = (6 * Math.PI) / 180
 
 /** Sensibilité de l'orbite : radians par pixel de glissement. À cette valeur,
  *  un glissement de la largeur d'un iPad fait un peu plus d'un demi-tour. */

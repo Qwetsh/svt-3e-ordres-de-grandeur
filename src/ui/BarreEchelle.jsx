@@ -20,6 +20,10 @@ export function BarreEchelle({ nmParPixel, largeur }) {
         <span className="barre-echelle__embout" />
       </div>
       <div className="barre-echelle__valeur">{barre.libelle}</div>
+      {/* Le carrelage du sol est tracé au pas de cette barre : le dire ici
+          transforme le fond de la scène en instrument de mesure, au lieu d'un
+          décor dont on se demande ce qu'il vaut. */}
+      <div className="barre-echelle__champ">= un carreau du sol</div>
       <div className="barre-echelle__champ">largeur de l’écran : {champDeVision}</div>
     </div>
   )

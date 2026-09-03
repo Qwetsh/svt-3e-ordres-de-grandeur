@@ -27,7 +27,7 @@ import { useLayoutEffect, useMemo } from 'react'
 import { Canvas, useThree } from '@react-three/fiber'
 import * as THREE from 'three'
 import { Modele } from './modeles.jsx'
-import { LIGNE_BASE_FRACTION } from './echelle.js'
+import { choisirBarreEchelle, LIGNE_BASE_FRACTION } from './echelle.js'
 import { limiteOeilNu } from './donnees.js'
 
 /** Distance fixe de la caméra. Sans effet sur la taille apparente (orthographique). */
@@ -72,6 +72,46 @@ function Eclairage() {
 }
 
 /**
+ * Le carrelage du sol.
+ *
+ * Une tuile peinte une fois — deux traits clairs sur deux bords — que la carte
+ * graphique répète des centaines de fois. C'est très exactement ce pour quoi les
+ * textures existent, et ça vaut mieux ici que des milliers de segments : les
+ * mipmaps fondent d'elles-mêmes les lignes en un gris uni là où le sol fuit vers
+ * le lointain, alors que des lignes géométriques y produiraient un moiré qui
+ * scintille au moindre mouvement.
+ *
+ * Les valeurs sont en NIVEAUX DE GRIS, jamais en couleur : le matériau les
+ * multiplie par sa propre couleur, c'est donc lui qui donne le ton du sol, et
+ * cette tuile ne décide que du contraste entre le trait et le carreau.
+ */
+function useTextureGrille() {
+  const gl = useThree((etat) => etat.gl)
+
+  return useMemo(() => {
+    const cote = 256
+    const canvas = document.createElement('canvas')
+    canvas.width = cote
+    canvas.height = cote
+    const contexte = canvas.getContext('2d')
+    contexte.fillStyle = '#8a8a8a'
+    contexte.fillRect(0, 0, cote, cote)
+    contexte.fillStyle = '#ffffff'
+    contexte.fillRect(0, 0, cote, 3)
+    contexte.fillRect(0, 0, 3, cote)
+
+    const texture = new THREE.CanvasTexture(canvas)
+    texture.colorSpace = THREE.SRGBColorSpace
+    texture.wrapS = THREE.RepeatWrapping
+    texture.wrapT = THREE.RepeatWrapping
+    // Sans filtrage anisotrope, un carrelage vu en enfilade se réduit à une
+    // bouillie grise à quelques carreaux de distance seulement.
+    texture.anisotropy = Math.min(8, gl.capabilities.getMaxAnisotropy())
+    return texture
+  }, [gl])
+}
+
+/**
  * Le sol sur lequel tous les objets sont posés — il ancre la rotation.
  *
  * Il est PLEIN, et non plus translucide : c'est lui qui répond à la question
@@ -79,35 +119,64 @@ function Eclairage() {
  * Combiné au bridage de l'élévation à l'horizontale (voir `gestes.js`), il rend
  * la scène impossible à retourner : on tourne autour des objets, jamais en
  * dessous d'eux.
+ *
+ * LE CÔTÉ D'UN CARREAU EST CELUI DE LA BARRE D'ÉCHELLE, au pixel près — même
+ * fonction, même appel. Un quadrillage décoratif, au pas arbitraire, aurait
+ * suggéré une unité inexistante à des élèves qui passent leur année à mesurer
+ * sur du papier millimétré. Celui-ci se lit : la barre, en haut à droite, donne
+ * la longueur réelle d'un carreau, et le carrelage étend cette mesure à tout
+ * l'écran. Il change de pas en même temps qu'elle au fil du zoom.
  */
-function Sol({ ligneBase, largeur, hauteur, azimut }) {
+function Sol({ ligneBase, largeur, hauteur, azimut, nmParPixel }) {
+  const texture = useTextureGrille()
+
   // Dimensionné sur la plus grande dimension de l'écran, pas seulement sur la
   // largeur : sur une tablette tenue en portrait, un sol dimensionné en largeur
   // laisse voir ses propres bords en haut et en bas du cadre.
-  const etendue = Math.max(largeur, hauteur) * 12
+  const etendueVoulue = Math.max(largeur, hauteur) * 12
+
+  // Un nombre PAIR de carreaux, et une étendue qui en est le multiple exact :
+  // le plan est centré sur l'origine, une intersection du quadrillage tombe donc
+  // pile sous le centre de la frise, et aucun carreau n'est coupé en deux au
+  // bord de la texture.
+  const { cote, carreaux } = useMemo(() => {
+    const pas = choisirBarreEchelle(nmParPixel).largeurPx
+    const nombre = Math.max(2, 2 * Math.ceil(etendueVoulue / (2 * pas)))
+    return { cote: nombre * pas, carreaux: nombre }
+  }, [nmParPixel, etendueVoulue])
+
+  useLayoutEffect(() => {
+    texture.repeat.set(carreaux, carreaux)
+  }, [texture, carreaux])
 
   return (
-    // Le sol TOURNE avec l'orbite. Le plan, carré et immense, est indifférent à
-    // cette rotation ; c'est le trait de la ligne de base qui a besoin d'elle.
-    // Fixe, ce trait s'enfoncerait vers l'horizon dès qu'on quitte la vue de
-    // face et barrerait l'écran en diagonale. Il reste ainsi ce qu'il est : la
-    // ligne au sol sur laquelle tout est posé, vue de plein pied sous
-    // n'importe quel angle.
-    <group position={[0, ligneBase, 0]} rotation={[0, azimut, 0]}>
+    <group position={[0, ligneBase, 0]}>
+      {/* Le carrelage NE TOURNE PAS avec l'orbite, et c'est lui qui rend la
+          rotation lisible : ses lignes défilent et pivotent sous les objets,
+          alors qu'un sol solidaire de la caméra resterait figé et ne dirait
+          rien. C'était le défaut du sol uni précédent — on tournait sans voir
+          qu'on tournait. */}
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
-        <planeGeometry args={[etendue, etendue]} />
+        <planeGeometry args={[cote, cote]} />
         {/* Opaque et écrivant la profondeur : ce qui descend sous le sol est
             coupé net par lui, comme le serait un objet posé sur une table. */}
-        <meshStandardMaterial color="#33404f" roughness={1} />
+        <meshStandardMaterial map={texture} color="#5e7692" roughness={1} />
       </mesh>
-      {/* Ligne de base proprement dite : c'est elle qui rend la comparaison
-          des hauteurs immédiate. Franchement au-dessus du plan du sol, jamais à
-          cheval dessus : à ras, les deux surfaces se disputeraient le même
-          pixel et la ligne scintillerait sur toute sa longueur. */}
-      <mesh position={[0, 1.2, 0]}>
-        <boxGeometry args={[etendue, 1.5, 1.5]} />
-        <meshBasicMaterial color="#4a5c78" />
-      </mesh>
+
+      {/* Ligne de base proprement dite : c'est elle qui rend la comparaison des
+          hauteurs immédiate. Elle, en revanche, TOURNE avec l'orbite. Fixe, elle
+          s'enfoncerait vers l'horizon dès qu'on quitte la vue de face et
+          barrerait l'écran en diagonale ; elle reste ainsi la ligne au sol sur
+          laquelle tout est posé, vue de plein pied sous n'importe quel angle.
+          Franchement au-dessus du plan du sol, jamais à cheval dessus : à ras,
+          les deux surfaces se disputeraient le même pixel et la ligne
+          scintillerait sur toute sa longueur. */}
+      <group rotation={[0, azimut, 0]}>
+        <mesh position={[0, 1.2, 0]}>
+          <boxGeometry args={[cote, 1.5, 1.5]} />
+          <meshBasicMaterial color="#7d93b3" />
+        </mesh>
+      </group>
     </group>
   )
 }
@@ -237,7 +306,13 @@ function Contenu({ visibles, nmParPixel, azimut, elevation, largeur, hauteur }) 
     <>
       <Camera azimut={azimut} elevation={elevation} />
       <Eclairage />
-      <Sol ligneBase={ligneBase} largeur={largeur} hauteur={hauteur} azimut={azimut} />
+      <Sol
+        ligneBase={ligneBase}
+        largeur={largeur}
+        hauteur={hauteur}
+        azimut={azimut}
+        nmParPixel={nmParPixel}
+      />
       <Ombres visibles={visibles} ligneBase={ligneBase} />
       <BandeOeilNu
         nmParPixel={nmParPixel}
@@ -284,7 +359,14 @@ export function Scene({ visibles, nmParPixel, azimut, elevation, largeur, hauteu
       gl={parametresGL}
       onCreated={({ gl, scene }) => {
         gl.setClearColor(new THREE.Color('#0b0f16'))
-        scene.fog = null
+        // Brouillard réglé sur la MOITIÉ LOINTAINE DU SOL, et sur elle seule.
+        // La caméra étant à distance fixe, les objets sont tous à peu près à
+        // `DISTANCE_CAMERA` : commencer le brouillard au-delà garantit qu'aucun
+        // d'eux n'est terni, alors que le carrelage, lui, s'enfonce jusqu'à
+        // 7 000 unités plus loin et s'éteint progressivement dans le noir du
+        // fond. Sans cela le quadrillage remplit l'écran jusqu'en haut et
+        // dispute l'attention aux objets, qui sont le sujet.
+        scene.fog = new THREE.Fog('#0b0f16', DISTANCE_CAMERA + 600, DISTANCE_CAMERA + 6500)
       }}
       style={{ position: 'absolute', inset: 0, touchAction: 'none' }}
     >

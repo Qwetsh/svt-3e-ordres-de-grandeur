@@ -44,10 +44,16 @@ continue de fonctionner pendant ce temps : en tournant la molette, on passe à
 l'objet suivant, qui apparaît à son tour. Un demi-tour complet ramène la frise
 entière, vue de l'autre côté.
 
-**Tout est posé sur un sol**, et la caméra ne descend jamais en dessous. Passer
-sous le plancher donnait une vue où les objets pendent au plafond : on s'y
-perdait en deux gestes, sans rien y gagner. Chaque objet porte son ombre au sol,
-qui dit d'un coup d'œil qu'il y est posé.
+**Tout est posé sur un sol carrelé**, et la caméra ne descend jamais jusqu'à
+l'horizontale. Passer sous le plancher donnait une vue où les objets pendent au
+plafond : on s'y perdait en deux gestes, sans rien y gagner. Chaque objet porte
+son ombre au sol, qui dit d'un coup d'œil qu'il y est posé.
+
+**Un carreau du sol vaut exactement la barre d'échelle** affichée en haut à
+droite — même longueur, au pixel près, et elle change de valeur en même temps
+que lui au fil du zoom. Le carrelage n'est donc pas un décor : c'est la barre
+d'échelle étendue à tout l'écran, de quoi estimer une taille sans rien mesurer.
+Il ne tourne pas avec la caméra, ce qui rend la rotation lisible.
 
 Les tablettes n'ont besoin du réseau **qu'au premier chargement**. Ensuite
 l'application est mise en cache et fonctionne hors ligne, y compris ajoutée à
