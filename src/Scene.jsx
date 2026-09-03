@@ -71,7 +71,15 @@ function Eclairage() {
   )
 }
 
-/** Le sol sur lequel tous les objets sont posés — il ancre la rotation. */
+/**
+ * Le sol sur lequel tous les objets sont posés — il ancre la rotation.
+ *
+ * Il est PLEIN, et non plus translucide : c'est lui qui répond à la question
+ * « où est le bas ? ». Une surface qu'on traverse du regard ne la posait pas.
+ * Combiné au bridage de l'élévation à l'horizontale (voir `gestes.js`), il rend
+ * la scène impossible à retourner : on tourne autour des objets, jamais en
+ * dessous d'eux.
+ */
 function Sol({ ligneBase, largeur, hauteur, azimut }) {
   // Dimensionné sur la plus grande dimension de l'écran, pas seulement sur la
   // largeur : sur une tablette tenue en portrait, un sol dimensionné en largeur
@@ -88,15 +96,81 @@ function Sol({ ligneBase, largeur, hauteur, azimut }) {
     <group position={[0, ligneBase, 0]} rotation={[0, azimut, 0]}>
       <mesh rotation={[-Math.PI / 2, 0, 0]}>
         <planeGeometry args={[etendue, etendue]} />
-        <meshStandardMaterial color="#141a24" roughness={1} transparent opacity={0.55} depthWrite={false} />
+        {/* Opaque et écrivant la profondeur : ce qui descend sous le sol est
+            coupé net par lui, comme le serait un objet posé sur une table. */}
+        <meshStandardMaterial color="#33404f" roughness={1} />
       </mesh>
       {/* Ligne de base proprement dite : c'est elle qui rend la comparaison
-          des hauteurs immédiate. */}
-      <mesh position={[0, 0.5, 0]}>
+          des hauteurs immédiate. Franchement au-dessus du plan du sol, jamais à
+          cheval dessus : à ras, les deux surfaces se disputeraient le même
+          pixel et la ligne scintillerait sur toute sa longueur. */}
+      <mesh position={[0, 1.2, 0]}>
         <boxGeometry args={[etendue, 1.5, 1.5]} />
-        <meshBasicMaterial color="#3d4c63" transparent opacity={0.9} />
+        <meshBasicMaterial color="#4a5c78" />
       </mesh>
     </group>
+  )
+}
+
+/**
+ * Ombres de contact.
+ *
+ * Une tache sombre au sol sous chaque objet. Ce n'est pas une vraie ombre
+ * calculée — il n'y a pas de shadow map dans cette scène, et il n'en faut pas :
+ * elle coûterait cher pour un rendu que personne ne regarde. Elle répond à une
+ * seule question, mais elle y répond mieux que tout le reste : cet objet
+ * touche-t-il le sol, ou flotte-t-il ? Sans elle, à peine incliné, on ne sait
+ * plus si un objet est petit et proche ou grand et lointain.
+ *
+ * Le dégradé est peint une fois dans un canvas et partagé par tous les objets.
+ */
+function useTextureOmbre() {
+  return useMemo(() => {
+    const cote = 128
+    const canvas = document.createElement('canvas')
+    canvas.width = cote
+    canvas.height = cote
+    const contexte = canvas.getContext('2d')
+    const degrade = contexte.createRadialGradient(cote / 2, cote / 2, 0, cote / 2, cote / 2, cote / 2)
+    // Peinte en BLANC, l'assombrissement venant de `color` sur le matériau :
+    // une texture noire ne se teinte pas (tout produit avec 0 vaut 0) et rend
+    // le réglage de l'ombre impossible à ajuster depuis le matériau.
+    degrade.addColorStop(0, 'rgba(255, 255, 255, 0.75)')
+    degrade.addColorStop(0.4, 'rgba(255, 255, 255, 0.42)')
+    degrade.addColorStop(1, 'rgba(255, 255, 255, 0)')
+    contexte.fillStyle = degrade
+    contexte.fillRect(0, 0, cote, cote)
+    return new THREE.CanvasTexture(canvas)
+  }, [])
+}
+
+function Ombres({ visibles, ligneBase }) {
+  const texture = useTextureOmbre()
+
+  return (
+    <>
+      {visibles.map((visible) => (
+        <mesh
+          key={visible.objet.id}
+          // Juste au-dessus du sol : posée dessus, elle disputerait ses pixels
+          // au plan et clignoterait.
+          position={[visible.x, ligneBase + 2, visible.z]}
+          rotation={[-Math.PI / 2, 0, 0]}
+          scale={visible.longueurPx * 2.1}
+        >
+          <planeGeometry args={[1, 1]} />
+          <meshBasicMaterial
+            map={texture}
+            color="#05070b"
+            transparent
+            // Elle s'efface avec son objet, sinon une ombre resterait au sol
+            // sous un objet devenu invisible.
+            opacity={visible.opacite}
+            depthWrite={false}
+          />
+        </mesh>
+      ))}
+    </>
   )
 }
 
@@ -164,6 +238,7 @@ function Contenu({ visibles, nmParPixel, azimut, elevation, largeur, hauteur }) 
       <Camera azimut={azimut} elevation={elevation} />
       <Eclairage />
       <Sol ligneBase={ligneBase} largeur={largeur} hauteur={hauteur} azimut={azimut} />
+      <Ombres visibles={visibles} ligneBase={ligneBase} />
       <BandeOeilNu
         nmParPixel={nmParPixel}
         ligneBase={ligneBase}

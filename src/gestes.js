@@ -25,14 +25,21 @@ import { bornesZoom, objets } from './donnees.js'
  * L'AZIMUT N'EST PAS BRIDÉ : on fait le tour complet des objets, pour les voir
  * de face, de profil, de dos.
  *
- * L'ÉLÉVATION, elle, s'arrête juste avant la verticale. Ce n'est pas un choix
- * de confort : à 90° exactement, la direction de visée devient colinéaire au
+ * L'ÉLÉVATION, elle, est bornée aux deux bouts.
+ *
+ * En haut, elle s'arrête juste avant la verticale, et ce n'est pas un choix de
+ * confort : à 90° exactement, la direction de visée devient colinéaire au
  * vecteur « haut » de la caméra, son orientation n'est plus définie et l'image
- * bascule d'un quart de tour d'une image à l'autre. 85° laissent voir la scène
- * pratiquement à la verticale, par-dessus comme par-dessous, sans jamais
- * atteindre ce point.
+ * bascule d'un quart de tour d'une image à l'autre. 85° laissent survoler la
+ * scène pratiquement à la verticale sans jamais atteindre ce point.
+ *
+ * En bas, elle s'arrête AU NIVEAU DU SOL. Passer dessous donnait une vue où les
+ * objets pendent au plafond, la ligne de base file au-dessus de la tête et plus
+ * rien ne dit où est le haut : on s'y perdait en deux gestes. Le sol est
+ * maintenant une surface pleine, et la caméra reste du côté où l'on se tient.
  */
 export const ELEVATION_MAX = (85 * Math.PI) / 180
+export const ELEVATION_MIN = 0
 
 /** Sensibilité de l'orbite : radians par pixel de glissement. À cette valeur,
  *  un glissement de la largeur d'un iPad fait un peu plus d'un demi-tour. */
@@ -41,7 +48,7 @@ const SENSIBILITE_ORBITE = 0.0045
 /** Durée du mode présentation, en millisecondes. */
 const DUREE_PRESENTATION = 30000
 
-const brider = (valeur, max) => Math.min(max, Math.max(-max, valeur))
+const briderElevation = (valeur) => Math.min(ELEVATION_MAX, Math.max(ELEVATION_MIN, valeur))
 
 /**
  * Ramène un angle dans [−π, π].
@@ -223,10 +230,10 @@ export function useControleur(largeur, hauteur) {
         return
       }
 
-      // Un doigt : orbite. Le tour complet à l'horizontale, presque complet à
-      // la verticale.
+      // Un doigt : orbite. Le tour complet à l'horizontale, du ras du sol à la
+      // verticale à l'autre.
       azimutRef.current = normaliserAngle(azimutRef.current + dx * SENSIBILITE_ORBITE)
-      elevationRef.current = brider(elevationRef.current - dy * SENSIBILITE_ORBITE, ELEVATION_MAX)
+      elevationRef.current = briderElevation(elevationRef.current - dy * SENSIBILITE_ORBITE)
     }
 
     const onPointerUp = (evenement) => {
@@ -265,8 +272,8 @@ export function useControleur(largeur, hauteur) {
       else if (evenement.key === '-' || evenement.key === '_') zoomer(1 / 1.25)
       else if (evenement.key === 'ArrowLeft') azimutRef.current = normaliserAngle(azimutRef.current - 0.06)
       else if (evenement.key === 'ArrowRight') azimutRef.current = normaliserAngle(azimutRef.current + 0.06)
-      else if (evenement.key === 'ArrowUp') elevationRef.current = brider(elevationRef.current + 0.05, ELEVATION_MAX)
-      else if (evenement.key === 'ArrowDown') elevationRef.current = brider(elevationRef.current - 0.05, ELEVATION_MAX)
+      else if (evenement.key === 'ArrowUp') elevationRef.current = briderElevation(elevationRef.current + 0.05)
+      else if (evenement.key === 'ArrowDown') elevationRef.current = briderElevation(elevationRef.current - 0.05)
       else if (evenement.key === '0') recadrer()
       else if (evenement.key === ' ') {
         evenement.preventDefault()

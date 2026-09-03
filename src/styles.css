@@ -330,6 +330,16 @@ body {
   backdrop-filter: blur(10px);
 }
 
+/* Le panneau replié : il ne reste que ce bouton, dans le coin où le panneau
+   reviendra. */
+.bouton--commandes {
+  position: absolute;
+  right: 16px;
+  bottom: 16px;
+  background: var(--fond-panneau);
+  backdrop-filter: blur(10px);
+}
+
 /* --- Mini-carte ----------------------------------------------------------- */
 
 .minicarte__titre {

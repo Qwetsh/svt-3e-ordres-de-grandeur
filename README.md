@@ -19,6 +19,13 @@ pendant que Demodex apparaît.
 | **▶ Présentation** | voyage automatique du virus au grain de sel, 30 s |
 | **points de la mini-carte** | aller directement à un objet |
 | **« i » d'une étiquette** | afficher le nom et la catégorie de cet objet |
+| **☰ Commandes**, en bas à droite | déplier le panneau ; la croix le replie |
+
+**L'écran est vide au démarrage, et c'est voulu.** Le panneau du bas — mini-carte
+et commandes — occupe un quart de l'écran sur une tablette en portrait, celui-là
+même où arrivent les plus gros objets. Il est donc replié tant qu'on ne le
+demande pas, et rien n'en dépend : le pincement et la molette font l'échelle, le
+double tap recadre, la barre d'espace lance la présentation.
 
 Sous chaque objet, l'étiquette ne porte **que sa taille** : c'est elle qu'on
 compare d'un objet à l'autre, et la frise reste lisible même quand cinq objets
@@ -26,15 +33,21 @@ se côtoient. Le nom se lit d'un appui sur le « i » ; celui de l'objet de
 l'échelle courante est de toute façon écrit en haut à gauche.
 
 Au clavier, depuis le poste professeur : `+` / `−` pour l'échelle, les flèches
-pour tourner, `0` pour recadrer, `espace` pour la présentation.
+pour tourner, `0` pour recadrer, `espace` pour la présentation, `c` pour le
+panneau des commandes.
 
 **Ce qui se passe quand on tourne.** De face, toute la frise est visible : c'est
 la comparaison des tailles. En pivotant, les objets voisins s'effacent
 progressivement, et de profil il ne reste que celui de l'échelle courante — on
-en fait alors le tour, dessus et dessous compris. Le zoom continue de
-fonctionner pendant ce temps : en tournant la molette, on passe à l'objet
-suivant, qui apparaît à son tour. Un demi-tour complet ramène la frise entière,
-vue de l'autre côté.
+en fait alors le tour, et on peut le survoler jusqu'à la verticale. Le zoom
+continue de fonctionner pendant ce temps : en tournant la molette, on passe à
+l'objet suivant, qui apparaît à son tour. Un demi-tour complet ramène la frise
+entière, vue de l'autre côté.
+
+**Tout est posé sur un sol**, et la caméra ne descend jamais en dessous. Passer
+sous le plancher donnait une vue où les objets pendent au plafond : on s'y
+perdait en deux gestes, sans rien y gagner. Chaque objet porte son ombre au sol,
+qui dit d'un coup d'œil qu'il y est posé.
 
 Les tablettes n'ont besoin du réseau **qu'au premier chargement**. Ensuite
 l'application est mise en cache et fonctionne hors ligne, y compris ajoutée à

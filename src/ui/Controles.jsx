@@ -21,6 +21,7 @@ export function Controles({
   onRecadrer,
   onPresentation,
   onSources,
+  onMasquer,
 }) {
   return (
     <div className="controles">
@@ -61,6 +62,17 @@ export function Controles({
 
       <button type="button" className="bouton" onClick={onSources} aria-label="Afficher les sources">
         ?<span className="bouton__texte">Sources</span>
+      </button>
+
+      {/* Replier le panneau rend l'écran aux objets. Rien n'est perdu : le
+          pincement, la molette et le double tap continuent de tout piloter. */}
+      <button
+        type="button"
+        className="bouton bouton--rond"
+        onClick={onMasquer}
+        aria-label="Masquer les commandes"
+      >
+        ✕
       </button>
     </div>
   )

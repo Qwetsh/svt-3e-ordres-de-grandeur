@@ -57,6 +57,14 @@ export default function App() {
   const { largeur, hauteur } = useTaille(cadreRef)
   const [sourcesOuvertes, setSourcesOuvertes] = useState(false)
 
+  // Le panneau du bas est REPLIÉ AU DÉMARRAGE. Il occupe un bon quart de l'écran
+  // sur une tablette en portrait, et ce quart est justement celui où arrivent
+  // les plus gros objets de la frise. Tout ce qu'il commande reste accessible
+  // sans lui — molette et pincement pour l'échelle, double tap pour recadrer,
+  // barre d'espace pour la présentation — il n'est donc pas nécessaire à
+  // l'exploration, seulement au pilotage précis.
+  const [commandesOuvertes, setCommandesOuvertes] = useState(false)
+
   const {
     conteneurRef,
     nmParPixel,
@@ -69,6 +77,17 @@ export default function App() {
     allerA,
     basculerPresentation,
   } = useControleur(largeur, hauteur)
+
+  // « c » comme commandes : de quoi replier et déplier le panneau depuis le
+  // poste professeur, sans avoir à viser un bouton pendant la projection.
+  useEffect(() => {
+    const onKeyDown = (evenement) => {
+      if (evenement.target.tagName === 'INPUT') return
+      if (evenement.key === 'c' || evenement.key === 'C') setCommandesOuvertes((ouvert) => !ouvert)
+    }
+    window.addEventListener('keydown', onKeyDown)
+    return () => window.removeEventListener('keydown', onKeyDown)
+  }, [])
 
   const pret = largeur > 0 && hauteur > 0
 
@@ -118,24 +137,39 @@ export default function App() {
           <RepereActif repere={repere} />
           <BarreEchelle nmParPixel={nmParPixel} largeur={largeur} />
 
-          <div className="panneau-bas">
-            <MiniCarte
-              nmParPixel={nmParPixel}
-              largeur={largeur}
-              hauteur={hauteur}
-              repere={repere}
-              onAllerA={allerA}
-            />
-            <Controles
-              nmParPixel={nmParPixel}
-              presentationActive={presentationActive}
-              onCurseur={reglerCurseur}
-              onZoom={zoomer}
-              onRecadrer={recadrer}
-              onPresentation={basculerPresentation}
-              onSources={() => setSourcesOuvertes(true)}
-            />
-          </div>
+          {commandesOuvertes ? (
+            <div className="panneau-bas">
+              <MiniCarte
+                nmParPixel={nmParPixel}
+                largeur={largeur}
+                hauteur={hauteur}
+                repere={repere}
+                onAllerA={allerA}
+              />
+              <Controles
+                nmParPixel={nmParPixel}
+                presentationActive={presentationActive}
+                onCurseur={reglerCurseur}
+                onZoom={zoomer}
+                onRecadrer={recadrer}
+                onPresentation={basculerPresentation}
+                onSources={() => setSourcesOuvertes(true)}
+                onMasquer={() => setCommandesOuvertes(false)}
+              />
+            </div>
+          ) : (
+            /* Replié, le panneau ne laisse qu'un bouton dans le coin. Il reste
+               visible en permanence : un panneau qu'on ne sait pas rappeler est
+               un panneau perdu. */
+            <button
+              type="button"
+              className="bouton bouton--commandes"
+              onClick={() => setCommandesOuvertes(true)}
+              aria-label="Afficher les commandes"
+            >
+              ☰<span className="bouton__texte">Commandes</span>
+            </button>
+          )}
 
           {/* L'aide est écrite dans les termes du matériel réellement utilisé :
               « 2 doigts pour zoomer » n'aide personne au vidéoprojecteur, et
