@@ -18,6 +18,12 @@ pendant que Demodex apparaît.
 | **double tap** (ou double-clic) | recadrer (vue de face) |
 | **▶ Présentation** | voyage automatique du virus au grain de sel, 30 s |
 | **points de la mini-carte** | aller directement à un objet |
+| **« i » d'une étiquette** | afficher le nom et la catégorie de cet objet |
+
+Sous chaque objet, l'étiquette ne porte **que sa taille** : c'est elle qu'on
+compare d'un objet à l'autre, et la frise reste lisible même quand cinq objets
+se côtoient. Le nom se lit d'un appui sur le « i » ; celui de l'objet de
+l'échelle courante est de toute façon écrit en haut à gauche.
 
 Au clavier, depuis le poste professeur : `+` / `−` pour l'échelle, les flèches
 pour tourner, `0` pour recadrer, `espace` pour la présentation.

@@ -9,19 +9,40 @@
  * Chaque étiquette est ancrée sur la LIGNE DE BASE, jamais sur le sommet de
  * l'objet : elles s'alignent donc toutes proprement, ne recouvrent jamais ce
  * qu'elles désignent, et il n'y a aucune hauteur d'objet à calculer.
+ *
+ * L'étiquette n'affiche QUE LA TAILLE. Le nom et la catégorie se lisent d'un
+ * appui sur le « i ». Ce qui est comparé d'un objet à l'autre, c'est la taille ;
+ * afficher les noms en permanence remplissait la frise de texte, forçait des
+ * étiquettes larges, donc des rangées supplémentaires, donc des étiquettes
+ * abandonnées faute de place. Le nom de l'objet de l'échelle courante reste de
+ * toute façon écrit en clair dans la carte « À cette échelle ».
  */
 
+import { useEffect, useState } from 'react'
 import { LIGNE_BASE_FRACTION, formaterLongueur, projeter } from '../echelle.js'
 import { couleurs, libellesCategorie } from '../donnees.js'
 
 /** En dessous de cette taille, l'objet est trop petit pour mériter une étiquette. */
 const SEUIL_ETIQUETTE_PX = 5
 
-/** Largeur supposée d'une étiquette, pour la détection de chevauchement. */
-const LARGEUR_ETIQUETTE = 165
+/**
+ * Largeur supposée d'une étiquette, pour la détection de chevauchement.
+ * Réduite avec le passage à la taille seule : l'étiquette ne contient plus
+ * qu'un nombre et un bouton rond.
+ */
+const LARGEUR_ETIQUETTE = 108
+
+/** Demi-largeur, marge comprise : de quoi brider une étiquette contre le bord. */
+const DEMI_ETIQUETTE = 58
 
 /** Décalage vertical entre deux rangées d'étiquettes. */
-const HAUTEUR_RANGEE = 54
+const HAUTEUR_RANGEE = 46
+
+/**
+ * En dessous de cette opacité, l'étiquette est en train de s'effacer : on n'y
+ * laisse pas de bouton, qui resterait tactile alors qu'il n'est plus visible.
+ */
+const OPACITE_INTERACTIVE = 0.4
 
 /**
  * Nombre maximal de rangées. Au-delà, l'étiquette passerait derrière le panneau
@@ -63,6 +84,17 @@ function repartirEnRangees(candidats) {
 }
 
 export function Etiquettes({ visibles, azimut, elevation, largeur, hauteur, repere }) {
+  // Une seule fiche ouverte à la fois : deux fiches ouvertes se recouvriraient,
+  // et l'écran redeviendrait ce qu'on cherche justement à désencombrer.
+  const [ficheOuverte, setFicheOuverte] = useState(null)
+
+  // Elle se referme dès qu'on change d'échelle : elle a été ouverte pour lire un
+  // nom ici, pas pour voyager avec nous en recouvrant les étiquettes suivantes.
+  // La rotation, elle, ne la referme pas — on tourne justement autour de l'objet
+  // dont on vient de lire le nom.
+  const idRepere = repere?.id
+  useEffect(() => setFicheOuverte(null), [idRepere])
+
   const ligneBase = LIGNE_BASE_FRACTION * hauteur
 
   const candidats = visibles
@@ -76,9 +108,9 @@ export function Etiquettes({ visibles, azimut, elevation, largeur, hauteur, repe
       // et brider après coup ferait entrer en collision deux étiquettes que la
       // répartition venait justement de séparer.
       gauche: Math.max(
-        95,
+        DEMI_ETIQUETTE,
         Math.min(
-          largeur - 95,
+          largeur - DEMI_ETIQUETTE,
           projeter(visible.x, ligneBase, visible.z, azimut, elevation, largeur, hauteur).gauche,
         ),
       ),
@@ -98,11 +130,15 @@ export function Etiquettes({ visibles, azimut, elevation, largeur, hauteur, repe
         const objet = visible.objet
         const estRepere = repere?.id === objet.id
         const estNonVivant = objet.categorie === 'repere'
+        // Une étiquette à demi effacée par la rotation ne prend plus les appuis :
+        // sa fiche se referme et son bouton disparaît avec elle.
+        const interactive = visible.opacite >= OPACITE_INTERACTIVE
+        const ouverte = interactive && ficheOuverte === objet.id
 
         return (
           <div
             key={objet.id}
-            className={`etiquette${estRepere ? ' etiquette--active' : ''}${estNonVivant ? ' etiquette--non-vivant' : ''}`}
+            className={`etiquette${estRepere ? ' etiquette--active' : ''}${estNonVivant ? ' etiquette--non-vivant' : ''}${ouverte ? ' etiquette--ouverte' : ''}`}
             style={{
               left: `${gauche}px`,
               top: `${haut + rangee * HAUTEUR_RANGEE}px`,
@@ -110,11 +146,28 @@ export function Etiquettes({ visibles, azimut, elevation, largeur, hauteur, repe
               '--couleur': couleurs[objet.categorie],
             }}
           >
-            <span className="etiquette__nom">{objet.nom}</span>
-            <span className="etiquette__bas">
+            <span className="etiquette__ligne">
               <span className="etiquette__taille">{formaterLongueur(objet.longueurNm)}</span>
-              <span className="etiquette__categorie">{libellesCategorie[objet.categorie]}</span>
+              {interactive && (
+                <button
+                  type="button"
+                  className="etiquette__info"
+                  aria-expanded={ouverte}
+                  aria-label={ouverte ? 'Masquer le nom de l’objet' : 'Afficher le nom de l’objet'}
+                  onClick={() => setFicheOuverte(ouverte ? null : objet.id)}
+                >
+                  i
+                </button>
+              )}
             </span>
+
+            {ouverte && (
+              <span className="etiquette__fiche">
+                <span className="etiquette__nom">{objet.nom}</span>
+                {objet.sousTitre && <span className="etiquette__soustitre">{objet.sousTitre}</span>}
+                <span className="etiquette__categorie">{libellesCategorie[objet.categorie]}</span>
+              </span>
+            )}
           </div>
         )
       })}
